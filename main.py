@@ -120,3 +120,55 @@ if __name__ == "__main__":
     print(f"\n前5行数据:")
     print(df.head())
     print("分析完成！图表保存至 figures/，结果保存至 results/")
+
+    # 1.2 将「交易时间」字段转换为datetime类型，并提取小时整数
+    print("\n【步骤2】解析交易时间并提取小时...")
+    # 使用pd.to_datetime将字符串时间转换为datetime对象
+    df['交易时间'] = pd.to_datetime(df['交易时间'], format='%Y/%m/%d %H:%M')
+    # 使用dt.hour属性提取小时整数，创建新列hour
+    df['hour'] = df['交易时间'].dt.hour
+    print(f"时间解析完成，hour列范围: {df['hour'].min()} - {df['hour'].max()}")
+    # 1.3 计算搭乘站点数=abs(下车站点-上车站点)，构造新列ride_stops
+    print("\n【步骤3】计算搭乘站点数...")
+    # 使用abs函数计算绝对值，得到搭乘站点数
+    df['ride_stops'] = abs(df['下车站点'] - df['上车站点'])
+    print(
+        f"ride_stops统计: 最小值={df['ride_stops'].min()}, 最大值={df['ride_stops'].max()}, 平均值={df['ride_stops'].mean():.2f}")
+
+    # 1.4 删除ride_stops=0的异常记录
+    print("\n【步骤4】删除异常记录...")
+    # 记录删除前的行数
+    rows_before = len(df)
+    # 筛选出ride_stops不为0的记录
+    df = df[df['ride_stops'] != 0]
+    # 计算删除的行数
+    rows_deleted = rows_before - len(df)
+    print(f"删除ride_stops=0的记录数: {rows_deleted} 行")
+    print(f"剩余记录数: {len(df)} 行")
+
+    # 1.5 检查并处理缺失值
+    print("\n【步骤5】检查缺失值...")
+    # 使用isnull().sum()统计每列的缺失值数量
+    missing_values = df.isnull().sum()
+    print("各列缺失值数量:")
+    print(missing_values)
+
+    # 处理策略说明
+    if missing_values.sum() > 0:
+        print("\n缺失值处理策略:")
+        for col in df.columns:
+            if df[col].isnull().sum() > 0:
+                if df[col].dtype in ['int64', 'float64']:
+                    # 数值型列使用均值填充
+                    mean_val = df[col].mean()
+                    df[col].fillna(mean_val, inplace=True)
+                    print(f"  - {col}: 使用均值({mean_val:.2f})填充")
+                else:
+                    # 非数值型列使用众数填充
+                    mode_val = df[col].mode()[0]
+                    df[col].fillna(mode_val, inplace=True)
+                    print(f"  - {col}: 使用众数({mode_val})填充")
+    else:
+        print("数据无缺失值，无需处理")
+
+    print("\n任务1完成！")
